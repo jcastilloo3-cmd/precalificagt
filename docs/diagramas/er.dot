@@ -1,0 +1,60 @@
+digraph ER {
+  graph [rankdir=LR, fontname="Liberation Sans", nodesep=0.5, ranksep=1.0, pad=0.3];
+  node [shape=plain, fontname="Liberation Sans", fontsize=10];
+  edge [fontname="Liberation Sans", fontsize=9, color="#4a5a55", arrowhead=crow, arrowtail=tee, dir=both];
+
+  usuarios [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#0e5a47">
+    <tr><td bgcolor="#0e5a47"><font color="white"><b>usuarios</b></font></td></tr>
+    <tr><td align="left" port="id"><b>id</b> PK</td></tr>
+    <tr><td align="left">nombre</td></tr><tr><td align="left" port="dpi">dpi (único)</td></tr>
+    <tr><td align="left">email (único)</td></tr><tr><td align="left">telefono</td></tr>
+    <tr><td align="left">fecha_nacimiento</td></tr><tr><td align="left">password_hash</td></tr>
+    <tr><td align="left">rol</td></tr><tr><td align="left">estado</td></tr>
+    <tr><td align="left">intentos_fallidos</td></tr><tr><td align="left">bloqueado_hasta</td></tr>
+    <tr><td align="left">creado_en</td></tr></table>>];
+
+  productos [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#0e5a47">
+    <tr><td bgcolor="#0e5a47"><font color="white"><b>productos</b></font></td></tr>
+    <tr><td align="left" port="codigo"><b>codigo</b> PK</td></tr>
+    <tr><td align="left">nombre</td></tr><tr><td align="left">tasa_anual</td></tr>
+    <tr><td align="left">monto_min / monto_max</td></tr><tr><td align="left">plazo_min / plazo_max</td></tr>
+    <tr><td align="left">activo</td></tr></table>>];
+
+  solicitudes [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#0e5a47">
+    <tr><td bgcolor="#0e5a47"><font color="white"><b>solicitudes</b></font></td></tr>
+    <tr><td align="left" port="id"><b>id</b> PK</td></tr>
+    <tr><td align="left" port="uid">usuario_id FK</td></tr>
+    <tr><td align="left" port="pc">producto_codigo FK</td></tr>
+    <tr><td align="left">monto, plazo_meses</td></tr>
+    <tr><td align="left">ingreso_mensual, deudas_mensuales</td></tr>
+    <tr><td align="left">antiguedad_meses, tipo_empleo</td></tr>
+    <tr><td align="left">tasa_anual, cuota_estimada</td></tr>
+    <tr><td align="left">relacion_deuda_ingreso</td></tr>
+    <tr><td align="left">calificacion_buro</td></tr>
+    <tr><td align="left">estado, regla_aplicada, motivo</td></tr>
+    <tr><td align="left">fecha_creacion / evaluacion / vencimiento</td></tr></table>>];
+
+  historial [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#0e5a47">
+    <tr><td bgcolor="#0e5a47"><font color="white"><b>historial_estados</b></font></td></tr>
+    <tr><td align="left"><b>id</b> PK</td></tr>
+    <tr><td align="left" port="sid">solicitud_id FK</td></tr>
+    <tr><td align="left">estado_anterior</td></tr><tr><td align="left">estado_nuevo</td></tr>
+    <tr><td align="left" port="uid">usuario_id FK</td></tr>
+    <tr><td align="left">comentario</td></tr><tr><td align="left">fecha</td></tr></table>>];
+
+  parametros [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#6b7a75">
+    <tr><td bgcolor="#6b7a75"><font color="white"><b>parametros</b></font></td></tr>
+    <tr><td align="left"><b>clave</b> PK</td></tr><tr><td align="left">valor</td></tr><tr><td align="left">descripcion</td></tr></table>>];
+
+  buro [label=<<table border="0" cellborder="1" cellspacing="0" cellpadding="4" color="#6b7a75">
+    <tr><td bgcolor="#6b7a75"><font color="white"><b>buro_credito</b></font></td></tr>
+    <tr><td align="left" port="dpi"><b>dpi</b> PK</td></tr><tr><td align="left">calificacion (A–E)</td></tr>
+    <tr><td align="left">entidad</td></tr><tr><td align="left">actualizado_en</td></tr></table>>];
+
+  usuarios:id -> solicitudes:uid [label="1 : N"];
+  productos:codigo -> solicitudes:pc [label="1 : N"];
+  solicitudes:id -> historial:sid [label="1 : N"];
+  usuarios:id -> historial:uid [label="1 : N (actor)", style=dashed];
+  usuarios:dpi -> buro:dpi [label="dpi (consulta lógica)", style=dotted, arrowhead=none, arrowtail=none];
+  { rank=same; parametros; buro; }
+}

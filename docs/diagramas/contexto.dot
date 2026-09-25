@@ -1,0 +1,24 @@
+digraph G {
+  graph [rankdir=TB, fontname="Liberation Sans", nodesep=0.6, ranksep=0.9, pad=0.3, bgcolor="white"];
+  node [fontname="Liberation Sans", fontsize=12, shape=box, style="rounded,filled", color="#0e5a47", fillcolor="#ffffff", penwidth=1.4, margin="0.25,0.15"];
+  edge [fontname="Liberation Sans", fontsize=10, color="#4a5a55", fontcolor="#33403c"];
+
+  { rank=same;
+    sol [label=<<b>Solicitante</b><br/><font point-size="10">[Persona]<br/>Simula, solicita y<br/>responde ofertas</font>>, shape=box, fillcolor="#e7f2ee"];
+    ana [label=<<b>Analista de crédito</b><br/><font point-size="10">[Persona]<br/>Resuelve solicitudes<br/>en revisión manual</font>>, fillcolor="#e7f2ee"];
+    adm [label=<<b>Administrador</b><br/><font point-size="10">[Persona]<br/>Gestiona productos<br/>y usuarios</font>>, fillcolor="#e7f2ee"];
+  }
+
+  sys [label=<<b>PrecalificaGT</b><br/><font point-size="10">[Sistema de software]<br/>Simulación de créditos, registro de solicitudes,<br/>precalificación automática por reglas de negocio,<br/>revisión manual y reportes</font>>, fillcolor="#0e5a47", fontcolor="white", margin="0.4,0.25"];
+
+  { rank=same;
+    buro [label=<<b>Central de riesgo crediticio</b><br/><font point-size="10">[Sistema externo — simulado]<br/>Calificación A–E por DPI</font>>, style="rounded,dashed,filled", fillcolor="#f4f4f2", color="#6b7a75"];
+    nube [label=<<b>Plataforma cloud</b><br/><font point-size="10">[Render + PostgreSQL gestionado]<br/>Hospeda web, API y datos</font>>, style="rounded,dashed,filled", fillcolor="#f4f4f2", color="#6b7a75"];
+  }
+
+  sol -> sys [label="Usa (HTTPS)"];
+  ana -> sys [label="Usa (HTTPS)"];
+  adm -> sys [label="Usa (HTTPS)"];
+  sys -> buro [label="Consulta calificación\npor DPI"];
+  sys -> nube [label="Se ejecuta en", style=dashed];
+}

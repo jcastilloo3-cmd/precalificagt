@@ -1,0 +1,14 @@
+digraph C {
+  graph [rankdir=LR, fontname="Liberation Sans", nodesep=0.6, ranksep=1.1, pad=0.3];
+  node [fontname="Liberation Sans", fontsize=11, shape=box, style="rounded,filled", fillcolor="white", color="#0e5a47", penwidth=1.4];
+  edge [fontname="Liberation Sans", fontsize=9, color="#4a5a55"];
+  ini [shape=circle, label="", width=0.22, style=filled, fillcolor="#0e5a47"];
+  ACTIVO [fillcolor="#e3f4ea", color="#1c7c45"]; BLOQUEADO [fillcolor="#fbe6e6", color="#b3261e"]; INACTIVO [fillcolor="#f4f4f2", color="#6b7a75"];
+  ini -> ACTIVO [label="registro"];
+  ACTIVO -> ACTIVO [label="ingreso fallido 1–2 /\ningreso exitoso (reinicia contador)"];
+  ACTIVO -> BLOQUEADO [label="3.er ingreso fallido"];
+  BLOQUEADO -> ACTIVO [label="pasan 15 min o\nadmin desbloquea"];
+  BLOQUEADO -> BLOQUEADO [label="cualquier ingreso\ndurante el bloqueo → 423"];
+  ACTIVO -> INACTIVO [label="admin desactiva"];
+  INACTIVO -> ACTIVO [label="admin activa"];
+}

@@ -1,0 +1,18 @@
+digraph K {
+  graph [rankdir=TB, fontname="Liberation Sans", nodesep=0.35, ranksep=0.55, pad=0.3, compound=true];
+  node [fontname="Liberation Sans", fontsize=10, shape=box, style="rounded,filled", fillcolor="white", color="#6b7a75"];
+  edge [fontname="Liberation Sans", fontsize=8, color="#7a8783", arrowsize=0.7];
+  subgraph cluster_rutas { label=<<b>Rutas (Blueprints)</b>>; style="rounded,dashed"; color="#6b7a75"; fontsize=10;
+    auth [label="auth.py\nAUT", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    sim [label="simulador.py\nSIM"]; sol [label="solicitudes.py\nSOL", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    ana [label="analista.py\nANA"]; adm [label="admin.py\nADM"]; rep [label="reportes.py\nREP"]; }
+  subgraph cluster_serv { label=<<b>Servicios y utilidades</b>>; labelloc=b; style="rounded,dashed"; color="#6b7a75"; fontsize=10;
+    mot [label="motor_reglas.py\ncalculadora.py · politica.py\nMOT", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    est [label="estados.py\nSOL", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    seg [label="seguridad.py\nAUT", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    val [label="validaciones.py\nVAL", fillcolor="#fbe6e6", color="#b3261e", penwidth=1.6];
+    dbm [label="db.py\nacceso a datos"]; }
+  sol -> mot; sol -> est; ana -> est; sim -> mot; auth -> seg; auth -> val; adm -> val; mot -> val;
+  auth -> seg [style=invis]; sol -> seg [style=dashed]; ana -> seg [style=dashed]; adm -> seg [style=dashed]; rep -> seg [style=dashed];
+  est -> dbm; mot -> dbm; seg -> dbm [style=invis];
+}

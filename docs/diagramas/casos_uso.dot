@@ -1,0 +1,25 @@
+digraph U {
+  graph [rankdir=LR, fontname="Liberation Sans", nodesep=0.16, ranksep=1.1, pad=0.3, newrank=true];
+  node [fontname="Liberation Sans", fontsize=10];
+  edge [color="#4a5a55", arrowhead=none];
+  sol [label="Solicitante", shape=box, style="rounded,filled", fillcolor="#e7f2ee", color="#0e5a47"];
+  vis [label="Visitante", shape=box, style="rounded,filled", fillcolor="#e7f2ee", color="#0e5a47"];
+  ana [label="Analista de\ncrédito", shape=box, style="rounded,filled", fillcolor="#e7f2ee", color="#0e5a47"];
+  adm [label="Administrador", shape=box, style="rounded,filled", fillcolor="#e7f2ee", color="#0e5a47"];
+  buro [label="Central de riesgo\n(simulada)", shape=box, style="rounded,dashed,filled", fillcolor="#f4f4f2", color="#6b7a75"];
+  subgraph cluster_s { label=<<b>PrecalificaGT</b>>; style="rounded"; color="#0e5a47"; fontcolor="#0e5a47"; fontsize=12;
+    node [shape=ellipse, style=filled, fillcolor="white", color="#0e5a47"];
+    c1 [label="CU-01 Registrarse"]; c3 [label="CU-03 Simular crédito"]; c2 [label="CU-02 Iniciar sesión"];
+    c4 [label="CU-04 Registrar solicitud"]; c5 [label="CU-05 Enviar y precalificar"]; c6 [label="CU-06 Consultar estado"];
+    c7 [label="CU-07 Aceptar / declinar oferta"]; c8 [label="CU-08 Cancelar solicitud"];
+    c9 [label="CU-09 Resolver revisión"]; c12 [label="CU-12 Consultar reportes"];
+    c10 [label="CU-10 Administrar productos"]; c11 [label="CU-11 Administrar usuarios"];
+  }
+  vis -> c1; vis -> c3;
+  sol -> c3; sol -> c2; sol -> c4; sol -> c5; sol -> c6; sol -> c7; sol -> c8;
+  c2 -> ana; c9 -> ana; c12 -> ana;
+  c2 -> adm; c10 -> adm; c11 -> adm; c12 -> adm;
+  c5 -> buro [style=dashed, arrowhead=vee];
+  c1 -> c3 -> c2 -> c4 -> c5 -> c6 -> c7 -> c8 -> c9 -> c12 -> c10 -> c11 [style=invis];
+  { rank=same; c1; c3; c2; c4; c5; c6; c7; c8; c9; c12; c10; c11; }
+}

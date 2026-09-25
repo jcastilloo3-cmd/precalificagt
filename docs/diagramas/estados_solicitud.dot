@@ -1,0 +1,20 @@
+digraph S {
+  graph [rankdir=LR, fontname="Liberation Sans", nodesep=0.45, ranksep=0.75, pad=0.3];
+  node [fontname="Liberation Sans", fontsize=11, shape=box, style="rounded,filled", fillcolor="white", color="#0e5a47", penwidth=1.4];
+  edge [fontname="Liberation Sans", fontsize=9, color="#4a5a55", fontcolor="#33403c"];
+  ini [shape=circle, label="", width=0.22, style=filled, fillcolor="#0e5a47"];
+  BORRADOR; EN_REVISION [fillcolor="#fdf3dc", color="#a86b00"]; PREAPROBADA [fillcolor="#e3f4ea", color="#1c7c45"];
+  RECHAZADA [fillcolor="#fbe6e6", color="#b3261e", peripheries=2];
+  ACEPTADA [peripheries=2, fillcolor="#e3f4ea", color="#1c7c45"]; DECLINADA [peripheries=2]; CANCELADA [peripheries=2]; VENCIDA [peripheries=2];
+  ini -> BORRADOR [label="crear (RF-06)"];
+  BORRADOR -> PREAPROBADA [label="enviar: R5"];
+  BORRADOR -> RECHAZADA [label="enviar: R1–R4"];
+  BORRADOR -> EN_REVISION [label="enviar: R6–R8"];
+  BORRADOR -> CANCELADA [label="cancelar"];
+  EN_REVISION -> PREAPROBADA [label="analista: preaprobar"];
+  EN_REVISION -> RECHAZADA [label="analista: rechazar"];
+  EN_REVISION -> CANCELADA [label="cancelar"];
+  PREAPROBADA -> ACEPTADA [label="aceptar (≤ 30 días)"];
+  PREAPROBADA -> DECLINADA [label="declinar"];
+  PREAPROBADA -> VENCIDA [label="vigencia > 30 días"];
+}

@@ -1,0 +1,18 @@
+digraph G {
+  graph [rankdir=LR, fontname="Liberation Sans", nodesep=0.5, ranksep=0.8, pad=0.3, compound=true];
+  node [fontname="Liberation Sans", fontsize=11, shape=box, style="rounded,filled", color="#0e5a47", fillcolor="white", penwidth=1.4, margin="0.2,0.12"];
+  edge [fontname="Liberation Sans", fontsize=9.5, color="#4a5a55", fontcolor="#33403c"];
+
+  nav [label=<<b>Navegador web</b><br/><font point-size="9">Chrome / Firefox / Edge<br/>Solicitante, Analista, Admin</font>>, fillcolor="#e7f2ee"];
+
+  subgraph cluster_sys {
+    label=<<b>PrecalificaGT</b>>; fontsize=12; style="rounded,dashed"; color="#0e5a47"; fontcolor="#0e5a47"; margin=18;
+    web [label=<<b>Frontend web</b><br/><font point-size="9">[Contenedor: PHP 8.2 + Apache]<br/>Páginas HTML/CSS renderizadas<br/>en servidor; sesión PHP con<br/>el token JWT</font>>];
+    api [label=<<b>API REST</b><br/><font point-size="9">[Contenedor: Python 3.12, Flask 3.1,<br/>Gunicorn]<br/>Autenticación JWT, validaciones,<br/>motor de reglas, estados</font>>, fillcolor="#0e5a47", fontcolor="white"];
+    db [label=<<b>Base de datos</b><br/><font point-size="9">[Contenedor: PostgreSQL 16]<br/>usuarios, productos, parámetros,<br/>solicitudes, historial,<br/>buro_credito (central simulada)</font>>, shape=cylinder, style="filled", fillcolor="#f4f4f2"];
+  }
+
+  nav -> web [label="HTTPS\n(formularios HTML)"];
+  web -> api [label="HTTPS JSON\nBearer JWT"];
+  api -> db [label="SQL parametrizado\n(psycopg2 / TLS)"];
+}
