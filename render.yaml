@@ -1,0 +1,26 @@
+# Blueprint de Render (capa gratuita): dos servicios web con Docker.
+# La base de datos PostgreSQL se crea aparte (Neon o Supabase, capa gratuita) y su
+# cadena de conexión se coloca en DATABASE_URL desde el panel de Render.
+services:
+  - type: web
+    name: precalificagt-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+
+  - type: web
+    name: precalificagt-web
+    runtime: docker
+    plan: free
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    envVars:
+      - key: API_URL
+        sync: false
