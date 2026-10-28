@@ -96,9 +96,11 @@ pipeline {
                     // ("Organization is not allowed to access data from non main branches"). Por eso
                     // main se analiza en el proyecto principal (estado de producción, antes/después de
                     // E12) y los PR, DEV y QA en un proyecto de integración con su propio quality gate.
-                    def parametros = ''
+                    // autoconfig.disabled: evita que el scanner detecte la rama de Jenkins y la
+                    // envíe como rama secundaria
+                    def parametros = '-Dsonar.branch.autoconfig.disabled=true '
                     if (env.BRANCH_NAME != 'main') {
-                        parametros = "-Dsonar.projectKey=jcastilloo3-cmd_precalificagt-ci " +
+                        parametros += "-Dsonar.projectKey=jcastilloo3-cmd_precalificagt-ci " +
                                      "-Dsonar.projectName=PrecalificaGT-CI " +
                                      "-Dsonar.projectVersion=${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
                     }
