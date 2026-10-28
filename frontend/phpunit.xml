@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pruebas unitarias del frontend PHP. Ejecutar desde la raíz del repositorio:
+     php tools/phpunit.phar -c frontend/phpunit.xml -->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.5/phpunit.xsd"
+         bootstrap="tests/bootstrap.php"
+         colors="true"
+         cacheDirectory="../reports/.phpunit.cache">
+    <testsuites>
+        <testsuite name="frontend">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <source>
+        <include>
+            <file>includes/helpers.php</file>
+            <file>includes/api.php</file>
+        </include>
+    </source>
+</phpunit>

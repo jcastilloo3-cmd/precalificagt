@@ -1,11 +1,19 @@
-# Blueprint de Render (capa gratuita): dos servicios web con Docker.
-# La base de datos PostgreSQL se crea aparte (Neon o Supabase, capa gratuita) y su
-# cadena de conexión se coloca en DATABASE_URL desde el panel de Render.
+# Blueprint de Render (capa gratuita) del ambiente PROD (rama main).
+# El ambiente QA (rama QA) usa dos servicios equivalentes creados desde el panel:
+#   precalificagt-api-qa y precalificagt-web-qa, con los mismos Dockerfiles, Branch = QA
+#   y Auto-Deploy = Off (ver docs/fase2/ESTRATEGIA_RAMAS.md). No se declaran aquí para
+#   que la sincronización del Blueprint no los duplique.
+# autoDeploy: false — Render ya no despliega con cada push: solo Jenkins dispara el
+# despliegue (deploy hook) cuando el pipeline pasó todas sus etapas (E13).
+# Las bases PostgreSQL están en Neon (rama principal para PROD y rama "qa" para QA);
+# su cadena de conexión se coloca en DATABASE_URL desde el panel de Render.
 services:
   - type: web
     name: precalificagt-api
     runtime: docker
     plan: free
+    branch: main
+    autoDeploy: false
     dockerfilePath: ./backend/Dockerfile
     dockerContext: .
     healthCheckPath: /api/health
@@ -19,6 +27,8 @@ services:
     name: precalificagt-web
     runtime: docker
     plan: free
+    branch: main
+    autoDeploy: false
     dockerfilePath: ./frontend/Dockerfile
     dockerContext: ./frontend
     envVars:
