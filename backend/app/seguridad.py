@@ -13,7 +13,7 @@ def generar_token(usuario):
         "rol": usuario["rol"],
         "nombre": usuario["nombre"],
         "iat": emitido,
-        "exp": emitido + timedelta(hours=current_app.config["JWT_HORAS"]),
+        "exp": emitido + timedelta(minutes=current_app.config["JWT_MINUTOS"]),
     }
     return jwt.encode(carga, current_app.config["SECRET_KEY"], algorithm="HS256")
 

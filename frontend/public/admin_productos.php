@@ -32,6 +32,7 @@ encabezado('Productos de crédito');
     <p class="nota">Los cambios aplican a las simulaciones y solicitudes nuevas.</p>
     <?php foreach ($productos as $producto): ?>
         <form method="post" class="producto">
+            <?= campo_csrf() ?>
             <input type="hidden" name="codigo" value="<?= e($producto['codigo']) ?>">
             <h2><?= e($producto['nombre']) ?></h2>
             <div class="producto__campos">

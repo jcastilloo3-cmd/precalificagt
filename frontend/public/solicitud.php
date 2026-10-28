@@ -4,6 +4,8 @@ require __DIR__ . '/../includes/bootstrap.php';
 
 exigir_sesion(['SOLICITANTE']);
 $id = (int)($_GET['id'] ?? 0);
+// Ruta base de la solicitud en la API (evita repetir el literal; hallazgo de SonarCloud)
+$rutaApi = '/api/solicitudes/' . $id;
 
 const ACCIONES = [
     'enviar' => 'La solicitud fue evaluada.',
@@ -15,7 +17,7 @@ const ACCIONES = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = valor_post('accion');
     if (array_key_exists($accion, ACCIONES)) {
-        $respuesta = api('POST', '/api/solicitudes/' . $id . '/' . $accion, []);
+        $respuesta = api('POST', $rutaApi . '/' . $accion, []);
         if ($respuesta['estado'] === 200) {
             flash('exito', ACCIONES[$accion]);
         } else {
@@ -25,13 +27,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     redirigir('solicitud.php?id=' . $id);
 }
 
-$respuesta = api('GET', '/api/solicitudes/' . $id);
+$respuesta = api('GET', $rutaApi);
 if ($respuesta['estado'] !== 200) {
     flash('error', errores_de($respuesta)[0]);
     redirigir('panel.php');
 }
 $solicitud = $respuesta['datos'];
-$respuestaHistorial = api('GET', '/api/solicitudes/' . $id . '/historial');
+$respuestaHistorial = api('GET', $rutaApi . '/historial');
 $historial = $respuestaHistorial['estado'] === 200 ? $respuestaHistorial['datos'] : [];
 $estado = $solicitud['estado'];
 
@@ -69,6 +71,7 @@ encabezado('Solicitud ' . $id);
     </div>
 
     <form method="post" class="acciones">
+        <?= campo_csrf() ?>
         <?php if ($estado === 'BORRADOR'): ?>
             <button class="boton" name="accion" value="enviar">Enviar a evaluación</button>
         <?php endif; ?>

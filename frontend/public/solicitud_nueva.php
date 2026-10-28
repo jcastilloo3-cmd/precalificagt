@@ -35,6 +35,7 @@ encabezado('Nueva solicitud');
     <p class="nota">La solicitud se guarda como borrador. La evaluación se realiza cuando usted la envía.</p>
     <?= $errorGeneral ? aviso_error($errorGeneral) : '' ?>
     <form method="post" class="formulario formulario--columnas">
+        <?= campo_csrf() ?>
         <fieldset>
             <legend>Crédito solicitado</legend>
             <div class="campo">
