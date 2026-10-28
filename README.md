@@ -91,8 +91,8 @@ E = `7000000110101`. Un DPI que no está en la tabla se evalúa como *sin histor
 | Variable | Servicio | Descripción |
 |---|---|---|
 | `DATABASE_URL` | API | `postgresql://usuario:clave@host:5432/bd?sslmode=require`. Si no se define se usa SQLite. |
-| `SECRET_KEY` | API | Clave para firmar los tokens JWT. |
-| `JWT_HORAS` | API | Duración del token en horas (valor actual de la versión 1.0: 8). |
+| `SECRET_KEY` | API | Clave para firmar los tokens JWT. Obligatoria en la nube; si falta, se genera una aleatoria al arrancar. |
+| `JWT_MINUTOS` | API | Duración del token en minutos (30 según RF-03; en la versión 1.0 era `JWT_HORAS` = 8). |
 | `PORT` | API y Web | Puerto de escucha (Render lo define automáticamente). |
 | `API_URL` | Web | URL pública de la API, por ejemplo `https://precalificagt-api.onrender.com`. |
 
