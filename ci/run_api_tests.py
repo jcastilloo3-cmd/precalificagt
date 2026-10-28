@@ -48,6 +48,14 @@ def comando_newman():
     if newman:
         return [newman]
     npx = shutil.which("npx")
+    if not npx and os.name == "nt":
+        # Jenkins (servicio de Windows) no ve el PATH nuevo hasta reiniciarse: rutas típicas
+        for carpeta in (os.environ.get("ProgramFiles", r"C:\Program Files"), r"C:\Program Files"):
+            candidato = os.path.join(carpeta, "nodejs", "npx.cmd")
+            if os.path.exists(candidato):
+                npx = candidato
+                os.environ["PATH"] = os.path.dirname(candidato) + os.pathsep + os.environ.get("PATH", "")
+                break
     if not npx:
         sys.exit("No se encontró newman ni npx. Instale Node.js LTS y reinicie Jenkins.")
     return [npx, "--yes", f"newman@{NEWMAN_VERSION}"]
