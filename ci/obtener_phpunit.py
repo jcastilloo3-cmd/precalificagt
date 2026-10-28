@@ -15,5 +15,8 @@ if os.path.exists(DESTINO) and os.path.getsize(DESTINO) > 1_000_000:
     sys.exit(0)
 os.makedirs(os.path.dirname(DESTINO), exist_ok=True)
 print(f"Descargando {URL} ...")
-urllib.request.urlretrieve(URL, DESTINO)
+# phar.phpunit.de rechaza (HTTP 403) el agente por defecto "Python-urllib"
+peticion = urllib.request.Request(URL, headers={"User-Agent": "Mozilla/5.0 (PrecalificaGT CI)"})
+with urllib.request.urlopen(peticion, timeout=120) as respuesta, open(DESTINO, "wb") as salida:
+    salida.write(respuesta.read())
 print(f"PHPUnit guardado en {DESTINO} ({os.path.getsize(DESTINO) // 1024} KB)")
