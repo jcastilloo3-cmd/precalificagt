@@ -1,4 +1,6 @@
 """Fábrica de la aplicación Flask - API de PrecalificaGT."""
+import os
+
 from flask import Flask, jsonify
 
 from .config import Config
@@ -23,7 +25,13 @@ def create_app(config=None):
 
     @app.get("/api/health")
     def salud():
-        return jsonify(estado="ok", servicio="precalificagt-api")
+        # version = commit desplegado (Render define RENDER_GIT_COMMIT); el pipeline la
+        # compara con el commit construido para confirmar que el despliegue terminó.
+        return jsonify(
+            estado="ok",
+            servicio="precalificagt-api",
+            version=os.environ.get("RENDER_GIT_COMMIT", "local"),
+        )
 
     @app.errorhandler(ErrorValidacion)
     def error_validacion(error):
