@@ -1,0 +1,10 @@
+# Cobertura del backend (pytest-cov). Rutas relativas para que SonarCloud y Jenkins
+# encuentren los archivos sin importar la carpeta del workspace.
+[run]
+source = backend/app
+relative_files = True
+branch = False
+
+[report]
+show_missing = True
+skip_empty = True

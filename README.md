@@ -110,22 +110,29 @@ Los servicios gratuitos de Render se suspenden tras 15 minutos sin tráfico; la 
 petición después de la pausa puede tardar cerca de un minuto. Abra la aplicación un par de
 minutos antes de una demostración.
 
-## Pruebas
+## Pruebas (Fase 2)
 
-**Línea base: 0 pruebas automatizadas, 0 % de cobertura.** La versión 1.0 no incluye pruebas
-unitarias ni de API. Las pruebas de la Fase 1 son manuales/funcionales y se registran en
-Azure DevOps Test Plans (ver `docs/`).
+**Línea base registrada en la Fase 1: 0 pruebas automatizadas, 0 % de cobertura.** Todas las
+pruebas de esta sección fueron escritas en la Fase 2 y se identifican en el historial de commits.
 
-En la Fase 2 el equipo agregará:
+| Nivel | Herramienta | Ubicación | Comando (desde la raíz) |
+|---|---|---|---|
+| Unitarias backend | pytest + pytest-cov | `backend/tests/unit` | `python -m pytest backend/tests/unit` |
+| Integración de componentes | pytest + cliente Flask + SQLite temporal | `backend/tests/integracion` | `python -m pytest backend/tests/integracion` |
+| Unitarias frontend | PHPUnit 10.5 | `frontend/tests` | `php tools/phpunit.phar -c frontend/phpunit.xml` |
+| API | Postman + Newman | `tests/api` | `python ci/run_api_tests.py` |
+| Carga | k6 | `tests/carga` | `k6 run -e BASE_URL=<url> tests/carga/carga_precalificagt.js` |
 
-- Pruebas unitarias con `pytest` y `pytest-cov` (backend) y PHPUnit (frontend):
-  `pytest --cov=app` desde `backend/`.
-- Colección Postman ejecutada con Newman.
-- Análisis estático con SonarCloud y pruebas de carga con k6.
+Preparación: `python -m pip install -r backend/requirements-dev.txt` y `python ci/obtener_phpunit.py`.
+Cobertura de los módulos críticos: `python -m pytest --cov --cov-report=xml:reports/coverage.xml`
+seguido de `python ci/cobertura_criticos.py reports/coverage.xml`.
 
-## Pipeline
+## Pipeline (Fase 2)
 
-Pendiente para la Fase 2 (ramas DEV, QA y PROD con GitHub Actions o Azure Pipelines).
+Jenkins (Multibranch Pipeline, `Jenkinsfile`) con ramas `DEV`, `QA` y `main`: compilación,
+pruebas unitarias, análisis en SonarCloud con quality gate, pruebas de API con Newman y
+despliegue en Render (QA y PROD) mediante deploy hooks. Política de ramas en
+`docs/fase2/ESTRATEGIA_RAMAS.md`.
 
 ## Licencia
 
