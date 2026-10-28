@@ -12,6 +12,10 @@ const ESTADOS_SOLICITUD = [
     'VENCIDA' => ['Vencida', 'neutro'],
 ];
 
+// Protección CSRF de los formularios: el frontend autentica con la cookie de sesión de
+// PHP, así que cada POST debe traer un token ligado a la sesión (hallazgo S4502, Fase 2)
+const CAMPO_CSRF = 'csrf_token';
+
 const TIPOS_EMPLEO = [
     'ASALARIADO' => 'Asalariado',
     'INDEPENDIENTE' => 'Independiente',
@@ -129,4 +133,28 @@ function error_campo(array $detalles, string $campo): string
         return '';
     }
     return '<p class="campo__error" id="error-' . e($campo) . '">' . e($detalles[$campo]) . '</p>';
+}
+
+/** Token CSRF de la sesión actual; se crea con random_bytes la primera vez. */
+function csrf_token(): string
+{
+    if (empty($_SESSION['csrf']) || !is_string($_SESSION['csrf'])) {
+        $_SESSION['csrf'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf'];
+}
+
+/** Campo oculto con el token CSRF para incluir en cada formulario POST. */
+function campo_csrf(): string
+{
+    return '<input type="hidden" name="' . CAMPO_CSRF . '" value="' . e(csrf_token()) . '">';
+}
+
+/** Compara en tiempo constante el token recibido con el de la sesión. */
+function csrf_valido(mixed $token): bool
+{
+    return is_string($token)
+        && !empty($_SESSION['csrf'])
+        && is_string($_SESSION['csrf'])
+        && hash_equals($_SESSION['csrf'], $token);
 }
