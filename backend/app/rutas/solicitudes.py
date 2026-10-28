@@ -1,28 +1,43 @@
 """Solicitudes de precalificación del solicitante."""
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from flask import Blueprint, g, jsonify, request
 
 from ..db import consultar, ejecutar
 from ..seguridad import requiere_rol
-from ..servicios.estados import cambiar_estado, registrar_historial
+from ..servicios.estados import (
+    ESTADOS_ACTIVOS,
+    ESTADOS_CANCELABLES,
+    cambiar_estado,
+    oferta_vencida,
+    registrar_historial,
+    vencer_si_corresponde,
+)
 from ..servicios.motor_reglas import evaluar
 from ..servicios.politica import cargar_politica, consultar_buro, obtener_producto
-from ..validaciones import ahora, texto_fecha
+from ..validaciones import ErrorValidacion, ahora, texto_fecha, validar_solicitud
 
 bp = Blueprint("solicitudes", __name__, url_prefix="/api/solicitudes")
 
-TIPOS_EMPLEO = ("ASALARIADO", "INDEPENDIENTE")
+ROL_SOLICITANTE = "SOLICITANTE"
+MSG_NO_ENCONTRADA = "Solicitud no encontrada"
+CONSULTA_PROPIAS = (
+    "SELECT s.*, p.nombre AS producto_nombre FROM solicitudes s"
+    " JOIN productos p ON p.codigo = s.producto_codigo"
+    " WHERE s.usuario_id = ?"
+)
 
 
 def _solicitud_propia(solicitud_id):
-    return consultar(
-        "SELECT s.*, p.nombre AS producto_nombre FROM solicitudes s"
-        " JOIN productos p ON p.codigo = s.producto_codigo"
-        " WHERE s.id = ? AND s.usuario_id = ?",
-        (solicitud_id, g.usuario_id),
-        uno=True,
+    """Solicitud del usuario en sesión, ya marcada como VENCIDA si su oferta expiró."""
+    solicitud = consultar(
+        CONSULTA_PROPIAS + " AND s.id = ?", (g.usuario_id, solicitud_id), uno=True
     )
+    return vencer_si_corresponde(solicitud, g.usuario_id) if solicitud else None
+
+
+def _no_encontrada():
+    return jsonify(error=MSG_NO_ENCONTRADA), 404
 
 
 def _conflicto(mensaje):
@@ -30,75 +45,66 @@ def _conflicto(mensaje):
 
 
 @bp.get("")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def listar():
-    return jsonify(
-        consultar(
-            "SELECT s.*, p.nombre AS producto_nombre FROM solicitudes s"
-            " JOIN productos p ON p.codigo = s.producto_codigo"
-            " WHERE s.usuario_id = ? ORDER BY s.id DESC",
-            (g.usuario_id,),
-        )
-    )
+    solicitudes = consultar(CONSULTA_PROPIAS + " ORDER BY s.id DESC", (g.usuario_id,))
+    return jsonify([vencer_si_corresponde(s, g.usuario_id) for s in solicitudes])
 
 
 @bp.post("")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def crear():
     datos = request.get_json(silent=True) or {}
     producto = obtener_producto(datos.get("producto_codigo"))
     if not producto:
-        return jsonify(error="Producto no válido"), 400
+        raise ErrorValidacion({"producto_codigo": "Producto no válido"})
+    valores = validar_solicitud(datos, producto)
 
-    monto = float(datos.get("monto"))
-    plazo = int(datos.get("plazo_meses"))
-    ingreso = float(datos.get("ingreso_mensual"))
-    deudas = float(datos.get("deudas_mensuales", 0))
-    antiguedad = int(datos.get("antiguedad_meses"))
-    tipo_empleo = datos.get("tipo_empleo", "ASALARIADO")
-
-    if monto < producto["monto_min"] or monto > producto["monto_max"]:
-        return jsonify(error="Revise los datos del formulario", detalles={
-            "monto": f"El monto debe estar entre Q{producto['monto_min']:,.2f}"
-                     f" y Q{producto['monto_max']:,.2f}"}), 400
-    if tipo_empleo not in TIPOS_EMPLEO:
-        return jsonify(error="Revise los datos del formulario",
-                       detalles={"tipo_empleo": "Tipo de empleo no válido"}), 400
-
-    activa = consultar(
-        "SELECT id FROM solicitudes WHERE usuario_id = ? AND producto_codigo = ?"
-        " AND estado IN ('BORRADOR', 'EN_REVISION')",
-        (g.usuario_id, producto["codigo"]),
-        uno=True,
+    # RF-07: una sola solicitud activa por producto, incluida una PREAPROBADA vigente
+    # (corrige DEF-11). Las ofertas ya vencidas no cuentan como activas.
+    marcadores = ", ".join("?" for _ in ESTADOS_ACTIVOS)
+    activas = consultar(
+        f"SELECT * FROM solicitudes WHERE usuario_id = ? AND producto_codigo = ?"
+        f" AND estado IN ({marcadores})",
+        (g.usuario_id, producto["codigo"], *ESTADOS_ACTIVOS),
     )
-    if activa:
+    if any(not oferta_vencida(s) for s in activas):
         return _conflicto("Ya tiene una solicitud activa para este producto")
 
     nueva = ejecutar(
         "INSERT INTO solicitudes (usuario_id, producto_codigo, monto, plazo_meses, ingreso_mensual,"
         " deudas_mensuales, antiguedad_meses, tipo_empleo, estado, fecha_creacion)"
         " VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'BORRADOR', ?) RETURNING *",
-        (g.usuario_id, producto["codigo"], monto, plazo, ingreso, deudas, antiguedad,
-         tipo_empleo, texto_fecha(ahora())),
+        (
+            g.usuario_id,
+            producto["codigo"],
+            valores["monto"],
+            valores["plazo_meses"],
+            valores["ingreso_mensual"],
+            valores["deudas_mensuales"],
+            valores["antiguedad_meses"],
+            valores["tipo_empleo"],
+            texto_fecha(ahora()),
+        ),
     )
     registrar_historial(nueva["id"], None, "BORRADOR", g.usuario_id, "Solicitud creada")
     return jsonify(nueva), 201
 
 
 @bp.get("/<int:solicitud_id>")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def detalle(solicitud_id):
     solicitud = _solicitud_propia(solicitud_id)
     if not solicitud:
-        return jsonify(error="Solicitud no encontrada"), 404
+        return _no_encontrada()
     return jsonify(solicitud)
 
 
 @bp.get("/<int:solicitud_id>/historial")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def historial(solicitud_id):
     if not _solicitud_propia(solicitud_id):
-        return jsonify(error="Solicitud no encontrada"), 404
+        return _no_encontrada()
     return jsonify(
         consultar(
             "SELECT h.*, u.nombre AS usuario_nombre FROM historial_estados h"
@@ -110,11 +116,11 @@ def historial(solicitud_id):
 
 
 @bp.post("/<int:solicitud_id>/enviar")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def enviar(solicitud_id):
     solicitud = _solicitud_propia(solicitud_id)
     if not solicitud:
-        return jsonify(error="Solicitud no encontrada"), 404
+        return _no_encontrada()
     if solicitud["estado"] != "BORRADOR":
         return _conflicto("Solo se pueden enviar solicitudes en borrador")
 
@@ -147,37 +153,38 @@ def enviar(solicitud_id):
 
 
 @bp.post("/<int:solicitud_id>/aceptar")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def aceptar(solicitud_id):
     solicitud = _solicitud_propia(solicitud_id)
     if not solicitud:
-        return jsonify(error="Solicitud no encontrada"), 404
+        return _no_encontrada()
+    if solicitud["estado"] == "VENCIDA":
+        return _conflicto("La oferta venció y ya no puede aceptarse")
     if solicitud["estado"] != "PREAPROBADA":
         return _conflicto("Solo se puede aceptar una oferta preaprobada")
-    vencimiento = datetime.strptime(solicitud["fecha_vencimiento"], "%Y-%m-%d %H:%M:%S")
-    if ahora() > vencimiento:
-        cambiar_estado(solicitud, "VENCIDA", g.usuario_id, "La oferta superó su vigencia")
-        return _conflicto("La oferta venció y ya no puede aceptarse")
     return jsonify(cambiar_estado(solicitud, "ACEPTADA", g.usuario_id, "Oferta aceptada"))
 
 
 @bp.post("/<int:solicitud_id>/declinar")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def declinar(solicitud_id):
     solicitud = _solicitud_propia(solicitud_id)
     if not solicitud:
-        return jsonify(error="Solicitud no encontrada"), 404
+        return _no_encontrada()
     if solicitud["estado"] != "PREAPROBADA":
         return _conflicto("Solo se puede declinar una oferta preaprobada")
     return jsonify(cambiar_estado(solicitud, "DECLINADA", g.usuario_id, "Oferta declinada"))
 
 
 @bp.post("/<int:solicitud_id>/cancelar")
-@requiere_rol("SOLICITANTE")
+@requiere_rol(ROL_SOLICITANTE)
 def cancelar(solicitud_id):
     solicitud = _solicitud_propia(solicitud_id)
     if not solicitud:
-        return jsonify(error="Solicitud no encontrada"), 404
-    if solicitud["estado"] in ("ACEPTADA", "CANCELADA"):
-        return _conflicto("La solicitud ya no puede cancelarse")
-    return jsonify(cambiar_estado(solicitud, "CANCELADA", g.usuario_id, "Cancelada por el solicitante"))
+        return _no_encontrada()
+    # RF-13: solo desde BORRADOR o EN_REVISION (corrige DEF-14)
+    if solicitud["estado"] not in ESTADOS_CANCELABLES:
+        return _conflicto("Solo se pueden cancelar solicitudes en borrador o en revisión")
+    return jsonify(
+        cambiar_estado(solicitud, "CANCELADA", g.usuario_id, "Cancelada por el solicitante")
+    )
