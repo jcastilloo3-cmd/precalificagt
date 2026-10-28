@@ -333,6 +333,137 @@
           }
         },
         {
+          "name": "Registro con contraseña sin mayúscula ni dígito (DEF-08)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dpi = pm.collectionVariables.get(\"dpi_nuevo\");",
+                  "pm.collectionVariables.set(\"dpi_sufijo\", dpi.substring(1));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El detalle señala la contraseña\", function () {",
+                  "    pm.expect(pm.response.json().detalles).to.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Debil\",\n  \"dpi\": \"2{{dpi_sufijo}}\",\n  \"email\": \"debil.{{email_nuevo}}\",\n  \"telefono\": \"55551234\",\n  \"fecha_nacimiento\": \"1990-01-01\",\n  \"password\": \"sinmayuscula\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con correo duplicado en mayúsculas (DEF-17)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"email_mayus\", pm.collectionVariables.get(\"email_nuevo\").toUpperCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Indica que el correo ya está registrado\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"El correo ya está registrado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Duplicado\",\n  \"dpi\": \"1{{dpi_sufijo}}\",\n  \"email\": \"{{email_mayus}}\",\n  \"telefono\": \"55551234\",\n  \"fecha_nacimiento\": \"1990-01-01\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
           "name": "Iniciar sesión como el solicitante nuevo",
           "event": [
             {
@@ -381,6 +512,62 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{email_nuevo}}\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login con correo inexistente usa mensaje genérico (DEF-09)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"No revela si el correo existe\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"Credenciales inválidas\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no.existe.{{email_nuevo}}\",\n  \"password\": \"Cualquiera#1\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -992,6 +1179,67 @@
     {
       "name": "04 Robustez y control de acceso",
       "item": [
+        {
+          "name": "Analista no puede modificar productos (DEF-01)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Mensaje de permiso\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"permiso\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/productos/PERSONAL",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "productos",
+                "PERSONAL"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tasa_anual\": \"17.50\",\n  \"monto_min\": \"2000\",\n  \"monto_max\": \"150000\",\n  \"plazo_min\": \"6\",\n  \"plazo_max\": \"60\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
         {
           "name": "Solicitante no puede listar usuarios (RNF-05)",
           "event": [
