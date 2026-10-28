@@ -41,6 +41,11 @@ def create_app(config=None):
     def no_encontrado(_error):
         return jsonify(error="Recurso no encontrado"), 404
 
+    @app.errorhandler(500)
+    def error_interno(_error):
+        # Toda falla inesperada responde en JSON, nunca en HTML (RNF-02, DEF-10)
+        return jsonify(error="Error interno del servidor. Intente de nuevo más tarde"), 500
+
     @app.errorhandler(405)
     def metodo_no_permitido(_error):
         return jsonify(error="Método no permitido"), 405
