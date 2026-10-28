@@ -7,9 +7,11 @@ from ..db import consultar
 from ..seguridad import requiere_rol
 from ..servicios.estados import cambiar_estado
 from ..servicios.politica import cargar_politica
-from ..validaciones import ahora, texto_fecha
+from ..validaciones import ErrorValidacion, ahora, texto_fecha
 
 bp = Blueprint("analista", __name__, url_prefix="/api/analista")
+
+LONGITUD_MIN_COMENTARIO = 10
 
 CONSULTA_BASE = (
     "SELECT s.*, p.nombre AS producto_nombre, u.nombre AS solicitante_nombre,"
@@ -48,12 +50,14 @@ def resolver(solicitud_id):
     datos = request.get_json(silent=True) or {}
     decision = datos.get("decision")
     comentario = (datos.get("comentario") or "").strip()
+    errores = {}
     if decision not in ("PREAPROBAR", "RECHAZAR"):
-        return jsonify(error="Revise los datos del formulario",
-                       detalles={"decision": "Seleccione preaprobar o rechazar"}), 400
-    if not comentario:
-        return jsonify(error="Revise los datos del formulario",
-                       detalles={"comentario": "El comentario es obligatorio"}), 400
+        errores["decision"] = "Seleccione preaprobar o rechazar"
+    # RF-14: comentario obligatorio de al menos 10 caracteres (corrige DEF-19)
+    if len(comentario) < LONGITUD_MIN_COMENTARIO:
+        errores["comentario"] = "El comentario debe tener al menos 10 caracteres"
+    if errores:
+        raise ErrorValidacion(errores)
 
     solicitud = consultar("SELECT * FROM solicitudes WHERE id = ?", (solicitud_id,), uno=True)
     if not solicitud:

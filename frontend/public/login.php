@@ -28,6 +28,7 @@ encabezado('Iniciar sesión');
     <h1>Iniciar sesión</h1>
     <?= $errorGeneral ? aviso_error($errorGeneral) : '' ?>
     <form method="post" class="formulario">
+        <?= campo_csrf() ?>
         <div class="campo">
             <label for="email">Correo electrónico</label>
             <input id="email" name="email" type="email" autocomplete="username" required value="<?= e(valor_post('email')) ?>">

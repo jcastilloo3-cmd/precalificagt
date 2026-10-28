@@ -1,0 +1,1571 @@
+{
+  "info": {
+    "_postman_id": "d0ba31da-87ad-57d7-afcd-ff8fba44d7c9",
+    "name": "PrecalificaGT - Pruebas de API",
+    "description": "Pruebas de API (no unitarias) de PrecalificaGT. Se ejecutan con Newman desde el pipeline de Jenkins contra la API levantada en el ambiente de integración. Variables: baseUrl, password_analista.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test(\"La respuesta es JSON\", function () {",
+          "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000"
+    },
+    {
+      "key": "password_analista",
+      "value": "Analista#2026"
+    },
+    {
+      "key": "password_nuevo",
+      "value": "Segura#2026"
+    },
+    {
+      "key": "email_nuevo",
+      "value": ""
+    },
+    {
+      "key": "dpi_nuevo",
+      "value": ""
+    },
+    {
+      "key": "token_solicitante",
+      "value": ""
+    },
+    {
+      "key": "token_analista",
+      "value": ""
+    },
+    {
+      "key": "solicitud_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Salud y catálogo (público)",
+      "item": [
+        {
+          "name": "Verificar salud de la API",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"estado\", \"servicio\"], \"properties\": {\"estado\": {\"type\": \"string\"}, \"servicio\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El servicio reporta estado ok\", function () {",
+                  "    pm.expect(pm.response.json().estado).to.eql(\"ok\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "health"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar productos activos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"array\", \"minItems\": 1, \"items\": {\"type\": \"object\", \"required\": [\"codigo\", \"tasa_anual\", \"monto_min\", \"monto_max\", \"plazo_min\", \"plazo_max\"], \"properties\": {\"codigo\": {\"type\": \"string\"}, \"tasa_anual\": {\"type\": \"number\"}, \"plazo_min\": {\"type\": \"integer\"}, \"plazo_max\": {\"type\": \"integer\"}}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Incluye el crédito PERSONAL con tasa de 18 %\", function () {",
+                  "    const personal = pm.response.json().find(p => p.codigo === \"PERSONAL\");",
+                  "    pm.expect(personal, \"producto PERSONAL\").to.be.an(\"object\");",
+                  "    pm.expect(personal.tasa_anual).to.eql(18);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/productos",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Simular crédito PERSONAL Q50,000 a 36 meses",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"cuota_mensual\", \"total_a_pagar\", \"total_intereses\", \"producto\"], \"properties\": {\"cuota_mensual\": {\"type\": \"number\"}, \"total_a_pagar\": {\"type\": \"number\"}, \"total_intereses\": {\"type\": \"number\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Cuota, total e intereses coinciden con la fórmula (RNF-06)\", function () {",
+                  "    const r = pm.response.json();",
+                  "    pm.expect(r.cuota_mensual).to.eql(1807.62);",
+                  "    pm.expect(r.total_a_pagar).to.eql(65074.32);",
+                  "    pm.expect(r.total_intereses).to.eql(15074.32);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulador",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulador"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 50000,\n  \"plazo_meses\": 36\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Simular fuera de rango (monto y plazo)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Reporta error en monto y en plazo\", function () {",
+                  "    const d = pm.response.json().detalles;",
+                  "    pm.expect(d).to.have.property(\"monto\");",
+                  "    pm.expect(d).to.have.property(\"plazo_meses\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/simulador",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "simulador"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 1000,\n  \"plazo_meses\": 70\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Autenticación y sesión",
+      "item": [
+        {
+          "name": "Registrar solicitante nuevo",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Correo y DPI únicos en cada ejecución (DPI sin historial en la central de riesgo)",
+                  "const sufijo = Date.now().toString().slice(-8);",
+                  "pm.collectionVariables.set(\"email_nuevo\", \"qa.\" + sufijo + \"@prueba.gt\");",
+                  "pm.collectionVariables.set(\"dpi_nuevo\", \"8\" + sufijo + \"0101\");"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"mensaje\", \"usuario\"], \"properties\": {\"usuario\": {\"type\": \"object\", \"required\": [\"id\", \"email\", \"rol\"], \"properties\": {\"rol\": {\"type\": \"string\"}}}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"La cuenta se crea con rol SOLICITANTE y estado ACTIVO\", function () {",
+                  "    const u = pm.response.json().usuario;",
+                  "    pm.expect(u.rol).to.eql(\"SOLICITANTE\");",
+                  "    pm.expect(u.estado).to.eql(\"ACTIVO\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario QA Newman\",\n  \"dpi\": \"{{dpi_nuevo}}\",\n  \"email\": \"{{email_nuevo}}\",\n  \"telefono\": \"55551234\",\n  \"fecha_nacimiento\": \"1990-01-01\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con contraseña sin mayúscula ni dígito (DEF-08)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const dpi = pm.collectionVariables.get(\"dpi_nuevo\");",
+                  "pm.collectionVariables.set(\"dpi_sufijo\", dpi.substring(1));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El detalle señala la contraseña\", function () {",
+                  "    pm.expect(pm.response.json().detalles).to.have.property(\"password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Debil\",\n  \"dpi\": \"2{{dpi_sufijo}}\",\n  \"email\": \"debil.{{email_nuevo}}\",\n  \"telefono\": \"55551234\",\n  \"fecha_nacimiento\": \"1990-01-01\",\n  \"password\": \"sinmayuscula\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Registro con correo duplicado en mayúsculas (DEF-17)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"email_mayus\", pm.collectionVariables.get(\"email_nuevo\").toUpperCase());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Indica que el correo ya está registrado\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"El correo ya está registrado\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/registro",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Usuario Duplicado\",\n  \"dpi\": \"1{{dpi_sufijo}}\",\n  \"email\": \"{{email_mayus}}\",\n  \"telefono\": \"55551234\",\n  \"fecha_nacimiento\": \"1990-01-01\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Iniciar sesión como el solicitante nuevo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"token\", \"usuario\"], \"properties\": {\"token\": {\"type\": \"string\", \"minLength\": 20}, \"usuario\": {\"type\": \"object\", \"required\": [\"id\", \"email\", \"rol\", \"estado\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"rol\": {\"type\": \"string\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"ACTIVO\"]}}}}};",
+                  "pm.test(\"La respuesta trae token y usuario\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.collectionVariables.set(\"token_solicitante\", pm.response.json().token);",
+                  "pm.test(\"El usuario autenticado es el registrado\", function () {",
+                  "    pm.expect(pm.response.json().usuario.email).to.eql(pm.collectionVariables.get(\"email_nuevo\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_nuevo}}\",\n  \"password\": \"{{password_nuevo}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Login con correo inexistente usa mensaje genérico (DEF-09)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"No revela si el correo existe\", function () {",
+                  "    pm.expect(pm.response.json().error).to.eql(\"Credenciales inválidas\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"no.existe.{{email_nuevo}}\",\n  \"password\": \"Cualquiera#1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Consultar perfil con token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"id\", \"email\", \"rol\", \"dpi\"], \"properties\": {\"dpi\": {\"type\": \"string\", \"pattern\": \"^[0-9]{13}$\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El perfil corresponde al DPI registrado\", function () {",
+                  "    pm.expect(pm.response.json().dpi).to.eql(pm.collectionVariables.get(\"dpi_nuevo\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Perfil sin token responde 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Pide iniciar sesión\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"iniciar sesión\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Perfil con token alterado responde 401 (RNF-04)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 401\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El token se reporta inválido\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"inválido\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}x"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/perfil",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "perfil"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Flujo de negocio: solicitud → revisión → oferta aceptada",
+      "item": [
+        {
+          "name": "Crear solicitud en BORRADOR",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 201\", function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"id\", \"estado\", \"producto_codigo\", \"monto\", \"plazo_meses\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"BORRADOR\", \"EN_REVISION\", \"PREAPROBADA\", \"RECHAZADA\", \"ACEPTADA\", \"DECLINADA\", \"CANCELADA\", \"VENCIDA\"]}, \"producto_codigo\": {\"type\": \"string\"}, \"monto\": {\"type\": \"number\"}, \"plazo_meses\": {\"type\": \"integer\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.collectionVariables.set(\"solicitud_id\", pm.response.json().id);",
+                  "pm.test(\"La solicitud nace en BORRADOR con los datos enviados\", function () {",
+                  "    const s = pm.response.json();",
+                  "    pm.expect(s.estado).to.eql(\"BORRADOR\");",
+                  "    pm.expect(s.monto).to.eql(50000);",
+                  "    pm.expect(s.plazo_meses).to.eql(36);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 50000,\n  \"plazo_meses\": 36,\n  \"ingreso_mensual\": 10000,\n  \"deudas_mensuales\": 500,\n  \"antiguedad_meses\": 24,\n  \"tipo_empleo\": \"ASALARIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Segunda solicitud del mismo producto responde 409 (RF-07)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Indica que ya existe una solicitud activa\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"solicitud activa\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 50000,\n  \"plazo_meses\": 36,\n  \"ingreso_mensual\": 10000,\n  \"deudas_mensuales\": 500,\n  \"antiguedad_meses\": 24,\n  \"tipo_empleo\": \"ASALARIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Enviar solicitud a precalificación",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"id\", \"estado\", \"producto_codigo\", \"monto\", \"plazo_meses\", \"regla_aplicada\", \"cuota_estimada\", \"relacion_deuda_ingreso\", \"calificacion_buro\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"BORRADOR\", \"EN_REVISION\", \"PREAPROBADA\", \"RECHAZADA\", \"ACEPTADA\", \"DECLINADA\", \"CANCELADA\", \"VENCIDA\"]}, \"producto_codigo\": {\"type\": \"string\"}, \"monto\": {\"type\": \"number\"}, \"plazo_meses\": {\"type\": \"integer\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Sin historial crediticio queda EN_REVISION por la regla R7\", function () {",
+                  "    const s = pm.response.json();",
+                  "    pm.expect(s.estado).to.eql(\"EN_REVISION\");",
+                  "    pm.expect(s.regla_aplicada).to.eql(\"R7\");",
+                  "    pm.expect(s.calificacion_buro).to.eql(\"SIN_HISTORIAL\");",
+                  "});",
+                  "pm.test(\"Cuota y DTI calculados (RF-09)\", function () {",
+                  "    const s = pm.response.json();",
+                  "    pm.expect(s.cuota_estimada).to.eql(1807.62);",
+                  "    pm.expect(s.relacion_deuda_ingreso).to.eql(23.08);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitud_id}}/enviar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "enviar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Iniciar sesión como analista",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"token\", \"usuario\"], \"properties\": {\"token\": {\"type\": \"string\", \"minLength\": 20}, \"usuario\": {\"type\": \"object\", \"required\": [\"id\", \"email\", \"rol\", \"estado\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"rol\": {\"type\": \"string\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"ACTIVO\"]}}}}};",
+                  "pm.test(\"La respuesta trae token y usuario\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.collectionVariables.set(\"token_analista\", pm.response.json().token);",
+                  "pm.test(\"El rol es ANALISTA\", function () {",
+                  "    pm.expect(pm.response.json().usuario.rol).to.eql(\"ANALISTA\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"analista@precalifica.gt\",\n  \"password\": \"{{password_analista}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Bandeja del analista incluye la solicitud",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"array\", \"items\": {\"type\": \"object\", \"required\": [\"id\", \"estado\", \"solicitante_nombre\"]}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"La solicitud enviada está en la bandeja\", function () {",
+                  "    const id = Number(pm.collectionVariables.get(\"solicitud_id\"));",
+                  "    const fila = pm.response.json().find(s => s.id === id);",
+                  "    pm.expect(fila, \"solicitud en bandeja\").to.be.an(\"object\");",
+                  "    pm.expect(fila.solicitante_nombre).to.eql(\"Usuario QA Newman\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analista/solicitudes?estado=EN_REVISION",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analista",
+                "solicitudes"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "EN_REVISION"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Resolver con comentario de menos de 10 caracteres (DEF-19)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El detalle señala el comentario\", function () {",
+                  "    pm.expect(pm.response.json().detalles.comentario).to.include(\"10 caracteres\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analista/solicitudes/{{solicitud_id}}/resolver",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analista",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"PREAPROBAR\",\n  \"comentario\": \"Ok\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Analista preaprueba la solicitud",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"id\", \"estado\", \"producto_codigo\", \"monto\", \"plazo_meses\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"BORRADOR\", \"EN_REVISION\", \"PREAPROBADA\", \"RECHAZADA\", \"ACEPTADA\", \"DECLINADA\", \"CANCELADA\", \"VENCIDA\"]}, \"producto_codigo\": {\"type\": \"string\"}, \"monto\": {\"type\": \"number\"}, \"plazo_meses\": {\"type\": \"integer\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Queda PREAPROBADA con vigencia\", function () {",
+                  "    const s = pm.response.json();",
+                  "    pm.expect(s.estado).to.eql(\"PREAPROBADA\");",
+                  "    pm.expect(s.fecha_vencimiento).to.match(/^\\d{4}-\\d{2}-\\d{2} /);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analista/solicitudes/{{solicitud_id}}/resolver",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analista",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "resolver"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"PREAPROBAR\",\n  \"comentario\": \"Capacidad de pago verificada con constancia laboral\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Cancelar una oferta PREAPROBADA responde 409 (DEF-14)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 409\", function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Explica qué estados se pueden cancelar\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"borrador o en revisión\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitud_id}}/cancelar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "cancelar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Solicitante acepta la oferta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"id\", \"estado\", \"producto_codigo\", \"monto\", \"plazo_meses\"], \"properties\": {\"id\": {\"type\": \"integer\"}, \"estado\": {\"type\": \"string\", \"enum\": [\"BORRADOR\", \"EN_REVISION\", \"PREAPROBADA\", \"RECHAZADA\", \"ACEPTADA\", \"DECLINADA\", \"CANCELADA\", \"VENCIDA\"]}, \"producto_codigo\": {\"type\": \"string\"}, \"monto\": {\"type\": \"number\"}, \"plazo_meses\": {\"type\": \"integer\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"La solicitud queda ACEPTADA\", function () {",
+                  "    pm.expect(pm.response.json().estado).to.eql(\"ACEPTADA\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitud_id}}/aceptar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "aceptar"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Historial completo de la solicitud (RNF-07)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"array\", \"minItems\": 4, \"items\": {\"type\": \"object\", \"required\": [\"estado_nuevo\", \"fecha\", \"usuario_id\"]}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Las transiciones están encadenadas de principio a fin\", function () {",
+                  "    const h = pm.response.json();",
+                  "    pm.expect(h.map(e => e.estado_nuevo)).to.eql([\"BORRADOR\", \"EN_REVISION\", \"PREAPROBADA\", \"ACEPTADA\"]);",
+                  "    pm.expect(h[0].estado_anterior).to.eql(null);",
+                  "    for (let i = 1; i < h.length; i++) {",
+                  "        pm.expect(h[i].estado_anterior).to.eql(h[i - 1].estado_nuevo);",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes/{{solicitud_id}}/historial",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes",
+                "{{solicitud_id}}",
+                "historial"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Robustez y control de acceso",
+      "item": [
+        {
+          "name": "Solicitud sin ingreso mensual responde 400 en JSON (DEF-10)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Detalle por campo en JSON\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "    pm.expect(pm.response.json().detalles.ingreso_mensual).to.eql(\"Campo obligatorio\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 50000,\n  \"plazo_meses\": 36,\n  \"deudas_mensuales\": 500,\n  \"antiguedad_meses\": 24,\n  \"tipo_empleo\": \"ASALARIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Solicitud con deudas negativas responde 400 (DEF-03)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\", \"detalles\"], \"properties\": {\"error\": {\"type\": \"string\"}, \"detalles\": {\"type\": \"object\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El detalle señala las deudas\", function () {",
+                  "    pm.expect(pm.response.json().detalles).to.have.property(\"deudas_mensuales\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/solicitudes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "solicitudes"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_codigo\": \"PERSONAL\",\n  \"monto\": 50000,\n  \"plazo_meses\": 36,\n  \"ingreso_mensual\": 10000,\n  \"deudas_mensuales\": -3000,\n  \"antiguedad_meses\": 24,\n  \"tipo_empleo\": \"ASALARIADO\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Analista no puede modificar productos (DEF-01)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Mensaje de permiso\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"permiso\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/productos/PERSONAL",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "productos",
+                "PERSONAL"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tasa_anual\": \"17.50\",\n  \"monto_min\": \"2000\",\n  \"monto_max\": \"150000\",\n  \"plazo_min\": \"6\",\n  \"plazo_max\": \"60\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Solicitante no puede listar usuarios (RNF-05)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"error\"], \"properties\": {\"error\": {\"type\": \"string\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"Mensaje de permiso\", function () {",
+                  "    pm.expect(pm.response.json().error).to.include(\"permiso\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_solicitante}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/usuarios",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "usuarios"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reporte resumen para el analista",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Código de respuesta 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const esquema = {\"type\": \"object\", \"required\": [\"total_solicitudes\", \"por_estado\", \"por_producto\", \"monto_preaprobado\"], \"properties\": {\"total_solicitudes\": {\"type\": \"integer\", \"minimum\": 1}, \"por_estado\": {\"type\": \"array\"}, \"monto_preaprobado\": {\"type\": \"number\"}}};",
+                  "pm.test(\"El cuerpo cumple el esquema\", function () {",
+                  "    pm.response.to.have.jsonSchema(esquema);",
+                  "});",
+                  "pm.test(\"El total coincide con la suma por estado\", function () {",
+                  "    const r = pm.response.json();",
+                  "    const suma = r.por_estado.reduce((t, e) => t + e.cantidad, 0);",
+                  "    pm.expect(suma).to.eql(r.total_solicitudes);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token_analista}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reportes/resumen",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "resumen"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

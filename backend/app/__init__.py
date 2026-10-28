@@ -1,4 +1,6 @@
 """Fábrica de la aplicación Flask - API de PrecalificaGT."""
+import os
+
 from flask import Flask, jsonify
 
 from .config import Config
@@ -23,7 +25,13 @@ def create_app(config=None):
 
     @app.get("/api/health")
     def salud():
-        return jsonify(estado="ok", servicio="precalificagt-api")
+        # version = commit desplegado (Render define RENDER_GIT_COMMIT); el pipeline la
+        # compara con el commit construido para confirmar que el despliegue terminó.
+        return jsonify(
+            estado="ok",
+            servicio="precalificagt-api",
+            version=os.environ.get("RENDER_GIT_COMMIT", "local"),
+        )
 
     @app.errorhandler(ErrorValidacion)
     def error_validacion(error):
@@ -32,6 +40,11 @@ def create_app(config=None):
     @app.errorhandler(404)
     def no_encontrado(_error):
         return jsonify(error="Recurso no encontrado"), 404
+
+    @app.errorhandler(500)
+    def error_interno(_error):
+        # Toda falla inesperada responde en JSON, nunca en HTML (RNF-02, DEF-10)
+        return jsonify(error="Error interno del servidor. Intente de nuevo más tarde"), 500
 
     @app.errorhandler(405)
     def metodo_no_permitido(_error):

@@ -1,0 +1,6 @@
+# Dependencias para pruebas y para el pipeline de Jenkins (no se instalan en producción).
+# No incluye psycopg2 ni gunicorn: las pruebas usan SQLite y el servidor de desarrollo.
+Flask==3.1.3
+PyJWT==2.7.0
+pytest==8.4.2
+pytest-cov==7.0.0
