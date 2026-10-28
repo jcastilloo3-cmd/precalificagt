@@ -64,6 +64,7 @@ encabezado('Revisión de solicitud ' . $id);
     <h2>Resolver solicitud</h2>
     <?= $errorGeneral ? aviso_error($errorGeneral) : '' ?>
     <form method="post" class="formulario">
+        <?= campo_csrf() ?>
         <fieldset class="opciones">
             <legend>Decisión</legend>
             <label><input type="radio" name="decision" value="PREAPROBAR" required> Preaprobar</label>

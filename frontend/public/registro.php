@@ -32,6 +32,7 @@ encabezado('Crear cuenta');
     <p class="nota">Necesita una cuenta para enviar solicitudes de precalificación.</p>
     <?= $errorGeneral ? aviso_error($errorGeneral) : '' ?>
     <form method="post" class="formulario">
+        <?= campo_csrf() ?>
         <div class="campo">
             <label for="nombre">Nombre completo</label>
             <input id="nombre" name="nombre" type="text" autocomplete="name" required value="<?= e(valor_post('nombre')) ?>">

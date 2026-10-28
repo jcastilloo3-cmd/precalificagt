@@ -34,6 +34,7 @@ encabezado('Simulador de crédito');
 
 <div class="simulador">
     <form method="post" class="panel formulario">
+        <?= campo_csrf() ?>
         <h2>Datos del crédito</h2>
         <?= $errorGeneral ? aviso_error($errorGeneral) : '' ?>
         <div class="campo">

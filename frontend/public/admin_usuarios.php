@@ -44,6 +44,7 @@ encabezado('Usuarios');
                     <td><?= e(fecha_corta($fila['bloqueado_hasta'])) ?></td>
                     <td>
                         <form method="post" class="acciones acciones--tabla">
+                            <?= campo_csrf() ?>
                             <input type="hidden" name="id" value="<?= e($fila['id']) ?>">
                             <?php if ($fila['estado'] === 'BLOQUEADO'): ?>
                                 <button class="boton boton--mini" name="accion" value="desbloquear">Desbloquear</button>
