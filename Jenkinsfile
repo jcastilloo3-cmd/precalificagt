@@ -92,13 +92,15 @@ pipeline {
                 script {
                     def scanner = tool 'SonarScanner2026A'
                     def comando = isUnix() ? "${scanner}/bin/sonar-scanner" : "\"${scanner}\\bin\\sonar-scanner.bat\""
+                    // El plan gratuito de SonarCloud solo expone la rama principal de cada proyecto
+                    // ("Organization is not allowed to access data from non main branches"). Por eso
+                    // main se analiza en el proyecto principal (estado de producción, antes/después de
+                    // E12) y los PR, DEV y QA en un proyecto de integración con su propio quality gate.
                     def parametros = ''
-                    if (env.CHANGE_ID) {
-                        parametros = "-Dsonar.pullrequest.key=${env.CHANGE_ID} " +
-                                     "-Dsonar.pullrequest.branch=${env.CHANGE_BRANCH} " +
-                                     "-Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-                    } else if (env.BRANCH_NAME != 'main') {
-                        parametros = "-Dsonar.branch.name=${env.BRANCH_NAME}"
+                    if (env.BRANCH_NAME != 'main') {
+                        parametros = "-Dsonar.projectKey=jcastilloo3-cmd_precalificagt-ci " +
+                                     "-Dsonar.projectName=PrecalificaGT-CI " +
+                                     "-Dsonar.projectVersion=${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
                     }
                     withSonarQubeEnv('SonarQube2026A') {
                         // sonar.qualitygate.wait: el scanner espera el resultado y falla si el gate no pasa
